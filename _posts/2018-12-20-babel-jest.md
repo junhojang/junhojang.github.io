@@ -1,6 +1,113 @@
 ---
-title: "Test"
-date: 2017-10-20 08:26:28 -0400
-categories: jekyll update
+title: "Babel과 Jest, eslint 설정하기"
+date: 2018-12-20 09:49:00 +0900
+categories: Babel Jest 
 ---
-Hi?
+
+# Babel과 Jest, eslint 설정하기(1)
+
+보통 nodejs 프로젝트 시작을 위하여 기본적으로 사용하게되는 babel과 jest, eslint를  설정하게 되는데,
+
+오늘은 이 중 Babel에 대해 알아보겠습니다. 
+
+## Babel
+
+Babel 설정을 위해 다음과 같은 모듈을 설치합니다.
+core 모듈은 Babel 동작을 위한 필수 모듈이며, preset-env는 ecma feature들의 preset 집합입니다.
+cli는 ecma 스크립트를 변환하기 위하여 설치합니다.
+
+```javascript
+$ npm install -D @babel/core @babel/preset-env @babel/cli
+```
+ 
+preset-env를 `.babelrc` 파일에 아래와 같이 설정하여 줍니다.
+
+```shell
+{
+  "presets": [
+    [
+      "@babel/preset-env"
+    ]
+   ]
+}
+```
+
+`package.json`에 babel-cli를 통해 ecma 스크립트를 변환시켜주는 run-script를 하기와 같이 작성하여 줍니다.
+
+```javascript
+{
+  ...
+  "scripts": {
+    "build": "./node_modules/.bin/babel src -s --out-dir dist"
+  },
+  ...
+}
+```
+
+`-s` 옵션은 변환 과정에서 `source-map`을 만듭니다.
+source-map은 변환 전 코드와 변환 후의 코드를 연결해주는 파일이며, source-map-support를 require hook 하여 디버깅시 원본에서 추적 할 수 있게 도와줍니다.
+
+```shell
+$ npm install source-map-support
+$ node --require source-map-support dist/index
+```
+
+이제 코드를 하기와 같이 작성하고, 변환 및 실행 해 보도록 합시다 :)
+
+ecma feature들 중 하나인 import 문을 사용하여 아래와 같은 코드를 작성하였습니다.
+
+```javascript
+// src/index.js
+import { version } from '../package.json';
+
+console.log(`package version: ${version}`);
+```
+
+위에서 작성한 run-script를 통해 빌드 합니다.
+
+```shell
+npm run build # === "./node_modules/.bin/babel src -s --out-dir dist"
+```
+
+dist 밑에 파일들이 생성되었습니다.
+```shell
+➜  setup-es8 tree -L 2
+.
+├── dist
+│   ├── index.js
+│   └── index.js.map
+├── lib
+│   ├── index.js
+│   └── sub-module.js
+├── node_modules
+│   ├── @babel
+...
+...
+├── package-lock.json
+├── package.json
+└── src
+    └── index.js
+```
+
+index.js를 살펴보면 코드가 변환되었고 source map이 설정되었음을 확인 할 수 있습니다.
+
+```javascript
+"use strict";
+
+var _package = require("../package.json");
+
+console.log(`package version: ${_package.version}`);
+//# sourceMappingURL=index.js.map
+```
+
+이제 변환된 코드를 실행 해 봅시다
+
+```shell
+$ node --require source-map-support dist/index
+➜  setup-es8 node --require source-map-support dist/index.js
+package version: 1.0.0
+```
+
+잘 실행 되었습니다.
+
+다음 글에서는 jest 설정 방법에 대해 알아보겠습니다 :P
